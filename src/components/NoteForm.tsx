@@ -1,14 +1,27 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Note, Skill } from "../interfaces-types/interfaces";
 import noteFormCSS from "./CSS-Components/noteForm.module.css";
 
 export default function NoteForm() {
+  const [initialSkills, setInitialSkills] = useState<Skill[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<Skill[]>([]);
   const [showAddButton, setShowAddButton] = useState<boolean>(true);
 
   const [notes, setNotes] = useState<Note[]>([]);
+
+  const getSkills = useCallback(async (): Promise<void> => {
+    let response = await axios.get(`${process.env.REACT_APP_BACK_URL}/skill`);
+    if (response.data) {
+      setInitialSkills(response.data);
+      setSkills(response.data);
+    }
+  }, []);
+
+  useEffect(() => {
+    getSkills();
+  }, []);
 
   const addNote = (): void => {
     setNotes([...notes, { skillId: "", skillLabel: "", value: 0 }]);
@@ -19,19 +32,18 @@ export default function NoteForm() {
     e: React.ChangeEvent<HTMLSelectElement>,
     index: number
   ) => {
-    console.log(e.target.value, index);
-    const oldSkills = [...selectedSkills];
+    const oldSelectedSkills = [...selectedSkills];
     const oldNotes = [...notes];
-    const skill = skills.find((skill) => skill.name === e.target.value);
+    const skill = initialSkills.find((skill) => skill.name === e.target.value);
     if (skill) {
-      oldSkills[index] = skill;
+      oldSelectedSkills[index] = skill;
       oldNotes[index] = {
         ...oldNotes[index],
         skillId: skill.id,
         skillLabel: skill.name,
       };
     }
-    setSelectedSkills(oldSkills);
+    setSelectedSkills(oldSelectedSkills);
     setNotes(oldNotes);
   };
 
@@ -39,9 +51,9 @@ export default function NoteForm() {
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     index: number
   ) => {
-    const oldSkills = [...selectedSkills];
-    oldSkills.splice(index, 1);
-    setSelectedSkills(oldSkills);
+    const oldSelectedSkills = [...selectedSkills];
+    oldSelectedSkills.splice(index, 1);
+    setSelectedSkills(oldSelectedSkills);
 
     const oldNotes = [...notes];
     oldNotes.splice(index, 1);
@@ -50,19 +62,16 @@ export default function NoteForm() {
   };
 
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_BACK_URL}/skill/`).then((res) => {
-      setSkills(res.data);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (notes.length <= skills.length) {
+    if (notes.length < initialSkills.length) {
       setShowAddButton(true);
     } else {
       setShowAddButton(false);
     }
-  }, [skills.length, notes.length]);
-  console.log(skills, selectedSkills, notes);
+  }, [initialSkills.length, notes.length]);
+  console.log("skills", skills);
+  console.log("initialSkills", initialSkills);
+  console.log("selectedSkills", selectedSkills);
+  console.log("notes", notes);
 
   return (
     <div className={noteFormCSS.container}>
@@ -77,12 +86,16 @@ export default function NoteForm() {
             <input placeholder="value" />
             <select
               onChange={(e) => handleChangeSkills(e, index)}
-              value={notes[index].skillLabel}
+              value={note.skillLabel}
             >
               <option>...</option>
-              {skills.map((skill, index) => (
-                <option key={index}>{skill.name}</option>
-              ))}
+              {skills
+                .filter((skill) => !selectedSkills.includes(skill))
+                .map((skill, index) => (
+                  <option key={index} value={skill.name}>
+                    {skill.name}
+                  </option>
+                ))}
             </select>
           </div>
           <button
