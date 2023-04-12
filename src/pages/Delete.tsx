@@ -17,6 +17,7 @@ function Delete() {
     firstName: "",
     lastName: "",
     email: "",
+    scores: [],
   });
   const { id } = useParams<Readonly<Params<string>>>();
   const navigate: NavigateFunction = useNavigate();
@@ -34,7 +35,6 @@ function Delete() {
       .delete(`${process.env.REACT_APP_BACK_URL}/wilder/delete/${id}`)
       .then(() => navigate("/"));
   };
-  console.log(wilder);
   return (
     <div>
       <h1>Are you sure you want to delete this wilder</h1>

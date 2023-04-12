@@ -13,7 +13,7 @@ function Liste(): JSX.Element {
     });
   }, []);
 
-  console.log("wildersState", typeof wilders, wilders);
+  console.log("wilders", wilders);
   return (
     <>
       <div>Liste</div>

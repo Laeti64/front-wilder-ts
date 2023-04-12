@@ -15,8 +15,6 @@ function WilderSkills({ wilder }: { wilder: Wilder }) {
     (score) => score.wilder.id === wilder.id
   );
 
-  console.log(scores, wilder, filteredScores);
-
   return (
     <div className={CSSCard.scoresContainer}>
       {filteredScores.map((score) => (

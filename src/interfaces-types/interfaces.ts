@@ -3,6 +3,7 @@ export interface Wilder {
   firstName: string;
   lastName: string;
   email: string;
+  scores: Score[];
 }
 
 export interface WilderBody extends Omit<Wilder, "id"> {}
