@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoteForm from "../components/NoteForm";
 import { Note, Score, Skill, WilderBody } from "../interfaces-types/interfaces";
 import formCSS from "../components/CSS-Components/formulaire.module.css";
+import { useLazyQuery } from "@apollo/client";
+import { WILDER_BY_ID } from "../graphql/wilders.query";
 
 function Formulaire(): JSX.Element {
   const [searchParams] = useSearchParams();
@@ -21,6 +23,7 @@ function Formulaire(): JSX.Element {
   const [formState, setFormState] = useState<WilderBody>(initialFormState);
   const [id, setId] = useState<string>("");
   const navigate = useNavigate();
+  const [FindWilder] = useLazyQuery(WILDER_BY_ID);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -29,25 +32,33 @@ function Formulaire(): JSX.Element {
   }, [searchParams, initialFormState]);
 
   const getWilder = async (id: string): Promise<void> => {
-    const wilder = await axios.get(
-      `${process.env.REACT_APP_BACK_URL}/wilder/${id}`
-    );
-    console.log("data", wilder.data);
-    setFormState(wilder.data);
-    let notesToSet: Note[] = [];
-    wilder.data.scores.forEach((score: Score) =>
-      notesToSet.push({
-        skillId: score.skill.id,
-        skillLabel: score.skill.name,
-        value: score.value,
-      })
-    );
-    setNotes(notesToSet);
-    let selectedSkillsToSet: Skill[] = [];
-    wilder.data.scores.forEach((score: Score) =>
-      selectedSkillsToSet.push({ id: score.skill.id, name: score.skill.name })
-    );
-    setSelectedSkills(selectedSkillsToSet);
+    console.log("id", id);
+    FindWilder({
+      onCompleted: (data) => {
+        console.log("data", data);
+        const { WilderById } = data;
+        setFormState(WilderById);
+        let notesToSet: Note[] = [];
+        WilderById.scores.forEach((score: Score) =>
+          notesToSet.push({
+            skillId: score.skill.id,
+            skillLabel: score.skill.name,
+            value: score.value,
+          })
+        );
+        setNotes(notesToSet);
+        let selectedSkillsToSet: Skill[] = [];
+        WilderById.scores.forEach((score: Score) =>
+          selectedSkillsToSet.push({
+            id: score.skill.id,
+            name: score.skill.name,
+          })
+        );
+        setSelectedSkills(selectedSkillsToSet);
+      },
+      variables: { wilderByIdId: id },
+    });
+    console.log("formstate", formState);
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setFormState({

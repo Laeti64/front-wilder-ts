@@ -1,24 +1,25 @@
-import { useEffect, useState } from "react";
 import WilderCard from "./WilderCard";
 import CardCSS from "./CSS-Components/wilderCard.module.css";
 import { Link } from "react-router-dom";
 import { Wilder } from "../interfaces-types/interfaces";
-import axios from "axios";
-
+import { useQuery } from "@apollo/client";
+import { WILDERS_LIST } from "../graphql/wilders.query";
+import { useEffect } from "react";
 function Liste(): JSX.Element {
-  const [wilders, setWilders] = useState<Wilder[]>([]);
+  const { data, refetch } = useQuery(WILDERS_LIST);
+  console.log("data", data);
+
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_BACK_URL}/wilder/`).then((res) => {
-      setWilders(res.data);
-    });
+    refetch();
   }, []);
 
-  console.log("wilders", wilders);
+  if (!data) return <div>Chargement...</div>;
+
   return (
     <>
       <div>Liste</div>
       <div className={CardCSS.cardContainer}>
-        {wilders.map((wilder) => (
+        {data.WilderList.map((wilder: Wilder) => (
           <WilderCard wilder={wilder} key={wilder.id} toDelete={false} />
         ))}
       </div>

@@ -4,15 +4,23 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { BrowserRouter } from "react-router-dom";
+import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
+
+const client = new ApolloClient({
+  uri: process.env.REACT_APP_BACK_URL,
+  cache: new InMemoryCache({
+    addTypename: false,
+  }),
+});
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
 root.render(
   <BrowserRouter>
-    <React.StrictMode>
+    <ApolloProvider client={client}>
       <App />
-    </React.StrictMode>
+    </ApolloProvider>
   </BrowserRouter>
 );
 

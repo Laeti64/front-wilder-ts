@@ -2,13 +2,16 @@ import React, { useEffect, useState } from "react";
 import CSSCard from "./CSS-Components/wilderCard.module.css";
 import { Score, Wilder } from "../interfaces-types/interfaces";
 import axios from "axios";
+import { useQuery } from "@apollo/client";
+import { SCORES_LIST } from "../graphql/scores.query";
 
 function WilderSkills({ wilder }: { wilder: Wilder }) {
   const [scores, setScores] = useState<Score[]>([]);
+
+  const { data } = useQuery(SCORES_LIST);
+  console.log("data", data);
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_BACK_URL}/score`).then((res) => {
-      setScores(res.data);
-    });
+    setScores(data.ScoreList);
   }, []);
 
   const filteredScores: Score[] = scores.filter(
