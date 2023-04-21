@@ -8,11 +8,15 @@ import { SCORES_LIST } from "../graphql/scores.query";
 function WilderSkills({ wilder }: { wilder: Wilder }) {
   const [scores, setScores] = useState<Score[]>([]);
 
-  const { data } = useQuery(SCORES_LIST);
+  const { data, refetch } = useQuery(SCORES_LIST, {
+    onCompleted: (data) => {
+      setScores(data.ScoreList);
+    },
+  });
   console.log("data", data);
   useEffect(() => {
-    setScores(data.ScoreList);
-  }, []);
+    refetch();
+  }, [data]);
 
   const filteredScores: Score[] = scores.filter(
     (score) => score.wilder.id === wilder.id

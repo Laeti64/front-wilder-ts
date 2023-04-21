@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
   Dispatch,
   SetStateAction,
@@ -8,6 +7,8 @@ import {
 } from "react";
 import { Note, Skill } from "../interfaces-types/interfaces";
 import noteFormCSS from "./CSS-Components/noteForm.module.css";
+import { useLazyQuery } from "@apollo/client";
+import { SKILLS_LIST } from "../graphql/skill.query";
 interface Iprops {
   notes: Note[];
   setNotes: Dispatch<SetStateAction<Note[]>>;
@@ -25,12 +26,14 @@ export default function NoteForm({
 
   const [showAddButton, setShowAddButton] = useState<boolean>(true);
 
+  const [GetSkillList] = useLazyQuery(SKILLS_LIST);
   const getSkills = useCallback(async (): Promise<void> => {
-    let response = await axios.get(`${process.env.REACT_APP_BACK_URL}/skill`);
-    if (response.data) {
-      setInitialSkills(response.data);
-      setSkills(response.data);
-    }
+    GetSkillList({
+      onCompleted: (data) => {
+        setInitialSkills(data.SkillList);
+        setSkills(data.SkillList);
+      },
+    });
   }, []);
 
   useEffect(() => {
@@ -87,16 +90,13 @@ export default function NoteForm({
   };
 
   const getFilteredSkills = (note: Note): Skill[] => {
-    console.log("note", note);
     let listSkills = [...skills];
-    console.log("selectedSkills92", selectedSkills);
-    console.log("listSkills", listSkills);
+
     let filteredSkills = listSkills.filter((skill) => {
-      console.log("skill", skill);
       return !selectedSkills.some((s) => s.name === skill.name);
     });
     filteredSkills.push({ id: note.skillId, name: note.skillLabel });
-    console.log("filteredSkills", filteredSkills);
+
     return filteredSkills;
   };
 
@@ -109,7 +109,7 @@ export default function NoteForm({
   }, [initialSkills.length, notes.length]);
 
   console.log("notes", notes);
-  console.log("selectedSkills", selectedSkills);
+
   return (
     <div className={noteFormCSS.container}>
       {showAddButton && (

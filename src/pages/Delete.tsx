@@ -1,15 +1,16 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   NavigateFunction,
-  Navigation,
   Params,
   useNavigate,
   useParams,
 } from "react-router-dom";
 import WilderCard from "../components/WilderCard";
 import { Wilder } from "../interfaces-types/interfaces";
+import { useLazyQuery, useMutation } from "@apollo/client";
+import { WILDER_DELETE } from "../graphql/wilders.mutation";
+import { WILDER_BY_ID } from "../graphql/wilders.query";
 
 function Delete() {
   const [wilder, setWilder] = useState<Wilder>({
@@ -21,19 +22,25 @@ function Delete() {
   });
   const { id } = useParams<Readonly<Params<string>>>();
   const navigate: NavigateFunction = useNavigate();
+  const [WilderDelete] = useMutation(WILDER_DELETE);
+  const [FindWilder] = useLazyQuery(WILDER_BY_ID);
 
   useEffect(() => {
-    axios
-      .get(`${process.env.REACT_APP_BACK_URL}/wilder/${id}`)
-      .then((data) => setWilder(data.data));
+    FindWilder({
+      variables: { wilderByIdId: id },
+      onCompleted: (data) => {
+        setWilder(data.WilderById);
+      },
+    });
   }, [id]);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     console.log("click");
-
-    axios
-      .delete(`${process.env.REACT_APP_BACK_URL}/wilder/delete/${id}`)
-      .then(() => navigate("/"));
+    if (id)
+      await WilderDelete({
+        variables: { wilderDeleteId: id },
+      });
+    navigate("/");
   };
   return (
     <div>

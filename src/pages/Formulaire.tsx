@@ -1,11 +1,15 @@
-import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoteForm from "../components/NoteForm";
 import { Note, Score, Skill, WilderBody } from "../interfaces-types/interfaces";
 import formCSS from "../components/CSS-Components/formulaire.module.css";
-import { useLazyQuery } from "@apollo/client";
+import { useLazyQuery, useMutation } from "@apollo/client";
 import { WILDER_BY_ID } from "../graphql/wilders.query";
+import {
+  WILDER_ASSIGN_SCORE,
+  WILDER_CREATE,
+  WILDER_UPDATE,
+} from "../graphql/wilders.mutation";
 
 function Formulaire(): JSX.Element {
   const [searchParams] = useSearchParams();
@@ -24,42 +28,57 @@ function Formulaire(): JSX.Element {
   const [id, setId] = useState<string>("");
   const navigate = useNavigate();
   const [FindWilder] = useLazyQuery(WILDER_BY_ID);
+  const [WilderCreate] = useMutation(WILDER_CREATE, {
+    onCompleted: (data) => {
+      console.log("data", data);
+    },
+    onError(error) {
+      console.log("ERROR", error);
+    },
+  });
+
+  const [WilderUpdate] = useMutation(WILDER_UPDATE);
+
+  const [AssignScore] = useMutation(WILDER_ASSIGN_SCORE);
 
   useEffect(() => {
     const id = searchParams.get("id");
+    const getWilder = async (id: string): Promise<void> => {
+      FindWilder({
+        onCompleted: (data) => {
+          console.log("data", data);
+          const { WilderById } = data;
+          setFormState(WilderById);
+          let notesToSet: Note[] = [];
+          WilderById.scores.forEach((score: Score) =>
+            notesToSet.push({
+              skillId: score.skill.id,
+              skillLabel: score.skill.name,
+              value: score.value,
+            })
+          );
+          setNotes(notesToSet);
+          let selectedSkillsToSet: Skill[] = [];
+          WilderById.scores.forEach((score: Score) =>
+            selectedSkillsToSet.push({
+              id: score.skill.id,
+              name: score.skill.name,
+            })
+          );
+          setSelectedSkills(selectedSkillsToSet);
+        },
+        variables: { wilderByIdId: id },
+      });
+    };
     id ? getWilder(id) : setFormState(initialFormState);
     id ? setId(id) : setId("");
-  }, [searchParams, initialFormState]);
+  }, [searchParams, initialFormState, FindWilder]);
 
-  const getWilder = async (id: string): Promise<void> => {
-    console.log("id", id);
-    FindWilder({
-      onCompleted: (data) => {
-        console.log("data", data);
-        const { WilderById } = data;
-        setFormState(WilderById);
-        let notesToSet: Note[] = [];
-        WilderById.scores.forEach((score: Score) =>
-          notesToSet.push({
-            skillId: score.skill.id,
-            skillLabel: score.skill.name,
-            value: score.value,
-          })
-        );
-        setNotes(notesToSet);
-        let selectedSkillsToSet: Skill[] = [];
-        WilderById.scores.forEach((score: Score) =>
-          selectedSkillsToSet.push({
-            id: score.skill.id,
-            name: score.skill.name,
-          })
-        );
-        setSelectedSkills(selectedSkillsToSet);
-      },
-      variables: { wilderByIdId: id },
-    });
-    console.log("formstate", formState);
-  };
+  useEffect(() => {
+    let scores = [];
+    notes.map((note) => scores.push({}));
+  }, [notes]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setFormState({
       ...formState,
@@ -72,41 +91,91 @@ function Formulaire(): JSX.Element {
   ): Promise<void> => {
     e.preventDefault();
     if (!id) {
-      await axios
-        .post(`${process.env.REACT_APP_BACK_URL}/wilder/create`, formState)
-        .then((res) =>
-          notes.forEach((note) =>
-            axios.post(
-              `${process.env.REACT_APP_BACK_URL}/wilder/assign/score`,
-              {
-                wilderId: res.data.id,
-                skillId: note.skillId,
+      const wilderResult = await WilderCreate({
+        variables: {
+          wilderCreate: {
+            firstName: formState.firstName,
+            lastName: formState.lastName,
+            email: formState.email,
+          },
+        },
+      });
+      const assignScore = async () =>
+        notes.forEach((note) => {
+          AssignScore({
+            variables: {
+              assignInput: {
                 value: note.value,
-              }
-            )
-          )
-        );
+                skillId: note.skillId,
+                wilderId: wilderResult.data.WilderCreate.id,
+              },
+            },
+          });
+        });
+      await assignScore;
+      navigate("/");
     } else {
-      await axios
-        .patch(
-          `${process.env.REACT_APP_BACK_URL}/wilder/update/partial/${id}`,
-          formState
-        )
-        .then((res) =>
-          notes.forEach((note) =>
-            axios.post(
-              `${process.env.REACT_APP_BACK_URL}/wilder/assign/score`,
-              {
-                wilderId: id,
-                skillId: note.skillId,
+      await WilderUpdate({
+        variables: {
+          updateWilder: {
+            firstName: formState.firstName,
+            lastName: formState.lastName,
+            email: formState.email,
+            id: id,
+          },
+        },
+      });
+      const assignScore = async () =>
+        notes.forEach((note) => {
+          AssignScore({
+            variables: {
+              assignInput: {
                 value: note.value,
-              }
-            )
-          )
-        );
+                skillId: note.skillId,
+                wilderId: id,
+              },
+            },
+          });
+        });
+      await assignScore();
+      navigate("/");
     }
-    navigate("/");
   };
+  //   await axios
+  //     .post(`${process.env.REACT_APP_BACK_URL}/wilder/create`, formState)
+  //     .then((res) =>
+  //       notes.forEach((note) =>
+  //         axios.post(
+  //           `${process.env.REACT_APP_BACK_URL}/wilder/assign/score`,
+  //           {
+  //             wilderId: res.data.id,
+  //             skillId: note.skillId,
+  //             value: note.value,
+  //           }
+  //         )
+  //       )
+  //     );
+  // } else {
+  //   await axios
+  //     .patch(
+  //       `${process.env.REACT_APP_BACK_URL}/wilder/update/partial/${id}`,
+  //       formState
+  //     )
+  //     .then((res) =>
+  //       notes.forEach((note) =>
+  //         axios.post(
+  //           `${process.env.REACT_APP_BACK_URL}/wilder/assign/score`,
+  //           {
+  //             wilderId: id,
+  //             skillId: note.skillId,
+  //             value: note.value,
+  //           }
+  //         )
+  //       )
+  //     );
+  // }
+  // navigate("/");
+  // };
   console.log(formState);
   return (
     <>
