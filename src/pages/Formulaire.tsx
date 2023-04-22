@@ -141,42 +141,7 @@ function Formulaire(): JSX.Element {
       navigate("/");
     }
   };
-  //   await axios
-  //     .post(`${process.env.REACT_APP_BACK_URL}/wilder/create`, formState)
-  //     .then((res) =>
-  //       notes.forEach((note) =>
-  //         axios.post(
-  //           `${process.env.REACT_APP_BACK_URL}/wilder/assign/score`,
-  //           {
-  //             wilderId: res.data.id,
-  //             skillId: note.skillId,
-  //             value: note.value,
-  //           }
-  //         )
-  //       )
-  //     );
-  // } else {
-  //   await axios
-  //     .patch(
-  //       `${process.env.REACT_APP_BACK_URL}/wilder/update/partial/${id}`,
-  //       formState
-  //     )
-  //     .then((res) =>
-  //       notes.forEach((note) =>
-  //         axios.post(
-  //           `${process.env.REACT_APP_BACK_URL}/wilder/assign/score`,
-  //           {
-  //             wilderId: id,
-  //             skillId: note.skillId,
-  //             value: note.value,
-  //           }
-  //         )
-  //       )
-  //     );
-  // }
-  // navigate("/");
-  // };
-  console.log(formState);
+
   return (
     <>
       <h1>Formulaire</h1>
